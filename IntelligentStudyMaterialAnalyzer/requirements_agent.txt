@@ -1,0 +1,6 @@
+# Feature 1: LangGraph Agent
+# Add these to your existing requirements.txt (or install alongside it).
+# Your existing packages (flask, easyocr, transformers, etc.) are unchanged.
+
+langgraph>=0.2.0
+langchain-core>=0.2.0   # LangGraph depends on langchain-core for graph primitives

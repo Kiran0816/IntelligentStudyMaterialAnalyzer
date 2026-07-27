@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligent Study Material Analyzer</title>
+    <!-- Favicon and Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/voice_assistant.css') }}">
+</head>
+
+<body>
+    <!-- Background glowing visual elements -->
+    <div class="glow-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">A</div>
+                <h2>Study Buddy</h2>
+            </div>
+
+            <!-- Drag and Drop Upload Box -->
+            <div class="upload-section">
+                <div class="upload-dropzone" id="dropzone">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <p>Drag & Drop Notes</p>
+                    <span>PDF, PNG, JPG up to 16MB</span>
+                    <input type="file" id="fileInput" accept=".pdf,image/*" style="display: none;">
+                </div>
+            </div>
+
+            <!-- URL Ingestion Box -->
+            <div class="upload-section" style="padding-top: 0;">
+                <div class="upload-dropzone" id="urlIngestZone"
+                    style="border-style: solid; border-width: 1px; padding: 16px; cursor: default;">
+                    <i class="fa-solid fa-globe" style="font-size: 1.5rem; margin-bottom: 4px;"></i>
+                    <p style="font-size: 0.8rem; margin-bottom: 8px;">Ingest Web Page Content</p>
+                    <div style="display: flex; gap: 8px; width: 100%;">
+                        <input type="url" id="urlInput" placeholder="https://example.com/article"
+                            style="flex: 1; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--card-border); background: rgba(0,0,0,0.3); color: var(--text-primary); font-size: 0.8rem; outline: none; min-width: 0;">
+                        <button class="btn btn-primary" onclick="ingestURL(event)"
+                            style="padding: 6px 12px; border-radius: var(--radius-sm);"><i
+                                class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Uploads History List -->
+            <div class="file-list-container">
+                <h3 class="file-list-title">Your Study Materials</h3>
+                <div id="fileListEmpty" class="empty-state-text text-center">No uploads yet</div>
+                <div id="fileList">
+                    <!-- Dynamic File Items go here -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Dashboard Viewport -->
+        <main class="main-content">
+            <!-- Loading overlay -->
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="spinner"></div>
+                <div class="loading-text" id="loadingText">Processing file...</div>
+            </div>
+
+            <!-- Welcome Screen (Default) -->
+            <div class="welcome-screen" id="welcomeScreen">
+                <div class="welcome-logo">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <h1>Intelligent Study Material Analyzer</h1>
+                <p>Upload your study notes, textbooks, slides, or diagrams. We will extract the text, analyze its
+                    difficulty, pull key terms, generate interactive flashcards/MCQs, and let you query the document
+                    directly using AI.</p>
+                <button class="btn btn-primary" style="margin-top: 24px;"
+                    onclick="document.getElementById('fileInput').click()">
+                    <i class="fa-solid fa-file-arrow-up"></i> Upload Study Material
+                </button>
+            </div>
+
+            <!-- Dashboard Panel (Active Document) -->
+            <div class="dashboard-panel" id="dashboardPanel">
+                <!-- Header -->
+                <header class="dashboard-header">
+                    <div>
+                        <span class="file-meta" id="headerFileType">PDF Document</span>
+                        <h1 class="active-file-title" id="headerFileName">Lecture Notes.pdf</h1>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" id="btnDownload" onclick="downloadStudyGuide()">
+                            <i class="fa-solid fa-download"></i> Export Study Guide
+                        </button>
+                        <button class="btn btn-secondary" style="color: #ef4444;" id="btnDeleteCurrent"
+                            onclick="deleteCurrentFile()">
+                            <i class="fa-solid fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Analytics Cards Grid -->
+                <section class="analytics-grid">
+                    <!-- Card 1: Difficulty -->
+                    <div class="metric-card">
+                        <div class="metric-icon icon-blue">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </div>
+                        <div class="metric-data">
+                            <span class="metric-value" id="analyticDifficulty">Medium</span>
+                            <span class="metric-label">Difficulty Level</span>
+                        </div>
+                    </div>
+                    <!-- Card 2: Word Count -->
+                    <div class="metric-card">
+                        <div class="metric-icon icon-purple">
+                            <i class="fa-solid fa-file-lines"></i>
+                        </div>
+                        <div class="metric-data">
+                            <span class="metric-value" id="analyticWordCount">1,250</span>
+                            <span class="metric-label">Word Count</span>
+                        </div>
+                    </div>
+                    <!-- Card 3: Study Time -->
+                    <div class="metric-card">
+                        <div class="metric-icon icon-orange">
+                            <i class="fa-solid fa-clock"></i>
+                        </div>
+                        <div class="metric-data">
+                            <span class="metric-value" id="analyticStudyTime">6 min</span>
+                            <span class="metric-label">Est. Study Time</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Tabs Navigation -->
+                <div class="tabs-container">
+                    <div class="tabs-header">
+                        <button class="tab-btn active" onclick="switchTab('summary')">
+                            <i class="fa-solid fa-compress"></i> Summary
+                        </button>
+                        <button class="tab-btn" onclick="switchTab('mcqs')">
+                            <i class="fa-solid fa-list-check"></i> Practice Quiz
+                        </button>
+                        <button class="tab-btn" onclick="switchTab('qa')">
+                            <i class="fa-solid fa-comments"></i> Ask AI Assistant
+                        </button>
+                        <button class="tab-btn" onclick="switchTab('keywords')">
+                            <i class="fa-solid fa-key"></i> Key Concepts
+                        </button>
+                        <button class="tab-btn" onclick="switchTab('flashcards')">
+                            <i class="fa-solid fa-clone"></i> Flashcards
+                        </button>
+                        <button class="tab-btn" onclick="switchTab('revision-notes')">
+                            <i class="fa-solid fa-note-sticky"></i> Revision Notes
+                        </button>
+                    </div>
+
+                    <!-- Tabs Content Panes -->
+                    <div class="tabs-content">
+                        <!-- Summary Pane -->
+                        <div class="tab-pane active" id="pane-summary">
+                            <div class="flex-row" style="margin-bottom: 16px;">
+                                <h3 style="font-weight: 600;">Automated Executive Summary</h3>
+                                <button class="btn btn-secondary" onclick="copySummaryToClipboard()">
+                                    <i class="fa-regular fa-copy"></i> Copy to Clipboard
+                                </button>
+                            </div>
+                            <div class="summary-text" id="summaryText">
+                                Loading summary content...
+                            </div>
+                        </div>
+
+                        <!-- MCQs Quiz Pane -->
+                        <div class="tab-pane" id="pane-mcqs">
+                            <div class="flex-row" style="margin-bottom: 16px;">
+                                <h3 style="font-weight: 600;">Interactive Practice Quiz</h3>
+                                <div class="metric-label" id="quizScoreText"
+                                    style="font-weight: 600; font-size: 0.9rem;">
+                                    Score: <span id="quizScore">0</span> / <span id="quizTotal">0</span> answered
+                                </div>
+                            </div>
+                            <div class="quiz-container" id="quizContainer">
+                                <!-- Dynamic MCQ cards go here -->
+                            </div>
+                        </div>
+
+                        <!-- QA Chat Assistant Pane -->
+                        <div class="tab-pane" id="pane-qa">
+                            <div class="chat-container">
+                                <div class="chat-history" id="chatHistory">
+                                    <div class="chat-bubble bubble-bot">
+                                        Hello! I've fully analyzed your notes. You can ask me any question about the
+                                        material (e.g. "What are the main findings?", "Explain the core formula
+                                        details"), and I'll find the answers directly in the text!
+                                    </div>
+                                </div>
+                                <!-- Voice Assistant Panel (Feature 3) -->
+                                <div class="voice-panel" id="voice-panel"
+                                    style="display:none; margin-bottom: 12px; width: 100%; max-width: 100%;">
+                                    <button id="voice-mic-btn" class="voice-btn voice-btn--idle" data-voice-state="idle"
+                                        title="Hold to speak a command" aria-label="Hold to speak a voice command"
+                                        aria-live="polite">
+                                        🎤 Hold to speak
+                                    </button>
+                                    <div id="voice-status" class="voice-status voice-status--info" aria-live="assertive"
+                                        style="font-size: 0.85rem;">
+                                        Ready. Hold the button to speak.
+                                    </div>
+                                    <div id="voice-transcript" class="voice-transcript-badge" style="display:none;"
+                                        aria-label="Transcribed speech"></div>
+                                </div>
+                                <div class="chat-input-area">
+                                    <input type="text" class="chat-input" id="chatInput"
+                                        placeholder="Ask a question about this study material..."
+                                        onkeypress="handleChatKeyPress(event)">
+                                    <button class="btn btn-primary" onclick="sendChatMessage()">
+                                        <i class="fa-solid fa-paper-plane"></i> Send
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Keywords Pane -->
+                        <div class="tab-pane" id="pane-keywords">
+                            <h3 style="font-weight: 600; margin-bottom: 16px;">Important Key Concepts & Terms</h3>
+                            <div class="keywords-container" id="keywordsContainer">
+                                <!-- Dynamic tags go here -->
+                            </div>
+                        </div>
+
+                        <!-- Flashcards Pane -->
+                        <div class="tab-pane" id="pane-flashcards">
+                            <div class="flex-row" style="margin-bottom: 16px;">
+                                <h3 style="font-weight: 600;">Study Flashcards</h3>
+                                <button class="btn btn-primary" onclick="generateFlashcards()">
+                                    <i class="fa-solid fa-arrows-rotate"></i> Regenerate Flashcards
+                                </button>
+                            </div>
+                            <div class="flashcards-grid" id="flashcardsContainer">
+                                <div class="empty-state-text text-center" style="grid-column: 1 / -1;">No study
+                                    flashcards generated yet. Click "Regenerate Flashcards" or ask the AI Assistant
+                                    "Create flashcards".</div>
+                            </div>
+                        </div>
+
+                        <!-- Revision Notes Pane -->
+                        <div class="tab-pane" id="pane-revision-notes">
+                            <div class="flex-row" style="margin-bottom: 16px;">
+                                <h3 style="font-weight: 600;">Structured Revision Notes</h3>
+                                <button class="btn btn-primary" onclick="generateRevisionNotes()">
+                                    <i class="fa-solid fa-arrows-rotate"></i> Regenerate Notes
+                                </button>
+                            </div>
+                            <div class="summary-text" id="revisionNotesText" style="white-space: normal;">
+                                <div class="empty-state-text text-center">No study revision notes generated yet. Click
+                                    "Regenerate Notes" or ask the AI Assistant "Create revision notes".</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Frontend logic orchestration -->
+    <script src="{{ url_for('static', filename='js/voice_assistant.js') }}?v=1.2"></script>
+    <script>
+        let currentFileId = null;
+        let activeTab = 'summary';
+        let quizAnswers = {}; // questionIndex -> selectedOption
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadFilesList();
+
+            // Setup dropzone click and events
+            const dropzone = document.getElementById("dropzone");
+            const fileInput = document.getElementById("fileInput");
+
+            dropzone.addEventListener("click", () => fileInput.click());
+
+            fileInput.addEventListener("change", (e) => {
+                if (e.target.files.length > 0) {
+                    uploadFile(e.target.files[0]);
+                }
+            });
+
+            // Drag and drop events
+            dropzone.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = "#6366f1";
+                dropzone.style.background = "rgba(99, 102, 241, 0.05)";
+            });
+
+            dropzone.addEventListener("dragleave", () => {
+                dropzone.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                dropzone.style.background = "rgba(255, 255, 255, 0.01)";
+            });
+
+            dropzone.addEventListener("drop", (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = "rgba(255, 255, 255, 0.1)";
+                dropzone.style.background = "rgba(255, 255, 255, 0.01)";
+                if (e.dataTransfer.files.length > 0) {
+                    uploadFile(e.dataTransfer.files[0]);
+                }
+            });
+        });
+
+        // Show/hide loader spinner
+        function setLoader(show, text = "Processing...") {
+            const overlay = document.getElementById("loadingOverlay");
+            const loaderText = document.getElementById("loadingText");
+            if (show) {
+                loaderText.innerText = text;
+                overlay.style.display = "flex";
+            } else {
+                overlay.style.display = "none";
+            }
+        }
+
+        // Fetch uploads list from DB
+        async function loadFilesList() {
+            try {
+                const res = await fetch("/api/uploads");
+                const data = await res.json();
+
+                const fileList = document.getElementById("fileList");
+                const emptyState = document.getElementById("fileListEmpty");
+
+                fileList.innerHTML = "";
+
+                if (data.success && data.uploads.length > 0) {
+                    emptyState.style.display = "none";
+                    data.uploads.forEach(upload => {
+                        const icon = upload.file_type === "PDF" ? "fa-file-pdf" : "fa-file-image";
+                        const item = document.createElement("div");
+                        item.className = `file-item ${currentFileId === upload.id ? 'active' : ''}`;
+                        item.onclick = () => selectFile(upload.id);
+
+                        // Parse simple date format
+                        const dateStr = new Date(upload.uploaded_at).toLocaleDateString([], {
+                            month: 'short',
+                            day: 'numeric'
+                        });
+
+                        item.innerHTML = `
+                            <div class="file-info">
+                                <i class="fa-solid ${icon} file-icon"></i>
+                                <div>
+                                    <div class="file-name" title="${upload.filename}">${upload.filename}</div>
+                                    <div class="file-meta">${upload.file_type} &bull; ${dateStr}</div>
+                                </div>
+                            </div>
+                            <button class="delete-btn" onclick="event.stopPropagation(); deleteFile(${upload.id})" title="Delete material">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        `;
+                        fileList.appendChild(item);
+                    });
+                } else {
+                    emptyState.style.display = "block";
+                }
+            } catch (err) {
+                console.error("Error loading files list:", err);
+            }
+        }
+
+        // Upload a file to Flask backend
+        async function uploadFile(file) {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            setLoader(true, `Uploading ${file.name} and extracting text...`);
+
+            try {
+                const res = await fetch("/api/upload", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    await loadFilesList();
+                    // Auto select the newly uploaded file to trigger full analysis
+                    selectFile(data.upload_id);
+                } else {
+                    alert("Upload failed: " + data.error);
+                    setLoader(false);
+                }
+            } catch (err) {
+                alert("Upload failed: " + err.message);
+                setLoader(false);
+            }
+            // Reset input element value so same file can be selected again if needed
+            document.getElementById("fileInput").value = "";
+        }
+
+        // Select a file and trigger or retrieve analysis
+        async function selectFile(id) {
+            currentFileId = id;
+
+            // Highlight active in sidebar
+            const items = document.querySelectorAll(".file-item");
+            items.forEach(item => item.classList.remove("active"));
+            loadFilesList(); // simple list refresh handles selection highlighting cleanly
+
+            // Toggle view visibility
+            document.getElementById("welcomeScreen").style.display = "none";
+            document.getElementById("dashboardPanel").style.display = "flex";
+
+            setLoader(true, "Analyzing study material (Running summaries & MCQs)...");
+
+            try {
+                const res = await fetch(`/api/analyze/${id}`, {
+                    method: "POST"
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    const result = data.data;
+
+                    // Update header
+                    document.getElementById("headerFileName").innerText = result.analytics.filename || "Study Notes";
+                    document.getElementById("headerFileType").innerText = result.analytics.file_type || "Document";
+
+                    // Update Analytics metrics
+                    document.getElementById("analyticDifficulty").innerText = result.analytics.difficulty_level;
+                    // Class name styling for difficulty color
+                    const diffEl = document.getElementById("analyticDifficulty");
+                    diffEl.className = "metric-value";
+                    diffEl.classList.add(`badge-${result.analytics.difficulty_level.toLowerCase()}`);
+
+                    document.getElementById("analyticWordCount").innerText = result.analytics.word_count.toLocaleString();
+                    document.getElementById("analyticStudyTime").innerText = `${result.analytics.estimated_study_time} min`;
+
+                    // Populate Tab: Summary
+                    document.getElementById("summaryText").innerText = result.summary;
+
+                    // Populate Tab: Keywords
+                    const kwContainer = document.getElementById("keywordsContainer");
+                    kwContainer.innerHTML = "";
+                    if (result.keywords && result.keywords.length > 0) {
+                        result.keywords.forEach(kw => {
+                            const badge = document.createElement("span");
+                            badge.className = "keyword-badge";
+                            badge.innerHTML = `<i class="fa-solid fa-tag"></i> ${kw}`;
+                            kwContainer.appendChild(badge);
+                        });
+                    } else {
+                        kwContainer.innerHTML = "<div class='empty-state-text'>No key concepts identified.</div>";
+                    }
+
+                    // Populate Tab: MCQs Practice Quiz
+                    setupQuiz(result.mcqs);
+
+                    // Load QA history
+                    await loadQAHistory(id);
+
+                    window.currentUploadId = id;
+                    // Load agent-only caches
+                    loadFlashcards(id);
+                    loadRevisionNotes(id);
+
+                    // Initialize voice assistant if present
+                    if (typeof VoiceAssistant !== "undefined" && VoiceAssistant.init) {
+                        VoiceAssistant.init({
+                            uploadId: id,
+                            micButtonId: 'voice-mic-btn',
+                            statusElementId: 'voice-status',
+                            onTranscript: function (text) {
+                                const badge = document.getElementById("voice-transcript");
+                                if (badge) { badge.textContent = `"${text}"`; badge.style.display = ""; }
+                                const input = document.getElementById("chatInput");
+                                if (input) input.value = text;
+                            },
+                            onAgentResponse: function (agentData) {
+                                handleAgentResult(agentData);
+                                addAgentChatResponse(agentData);
+                            },
+                            onError: function (msg) {
+                                console.error("[Voice] Error:", msg);
+                            },
+                            autoSpeak: true,
+                        });
+                        const panel = document.getElementById("voice-panel");
+                        if (panel) panel.style.display = "";
+                    }
+
+                    // Reset tab
+                    switchTab('summary');
+
+                } else {
+                    alert("Analysis failed: " + data.error);
+                    resetToWelcome();
+                }
+            } catch (err) {
+                alert("Analysis failed: " + err.message);
+                resetToWelcome();
+            } finally {
+                setLoader(false);
+            }
+        }
+
+        // Configure MCQ interactive quiz
+        function setupQuiz(mcqs) {
+            const container = document.getElementById("quizContainer");
+            container.innerHTML = "";
+            quizAnswers = {};
+
+            document.getElementById("quizTotal").innerText = mcqs.length;
+            document.getElementById("quizScore").innerText = "0";
+
+            if (!mcqs || mcqs.length === 0) {
+                container.innerHTML = "<div class='empty-state-text text-center'>Unable to generate questions from this content. Please verify that the file contains descriptive text.</div>";
+                return;
+            }
+
+            mcqs.forEach((mcq, qIdx) => {
+                const card = document.createElement("div");
+                card.className = "quiz-question-card";
+                card.id = `q-card-${qIdx}`;
+
+                // Construct options HTML
+                let optionsHtml = "";
+                mcq.options.forEach((opt, oIdx) => {
+                    optionsHtml += `
+                        <div class="quiz-option" id="opt-${qIdx}-${oIdx}" onclick="checkMCQAnswer(${qIdx}, ${oIdx}, '${opt.replace(/'/g, "\\'")}', '${mcq.correct_answer.replace(/'/g, "\\'")}')">
+                            <input type="radio" name="q-${qIdx}" id="radio-${qIdx}-${oIdx}" style="pointer-events:none">
+                            <label style="cursor:pointer; pointer-events:none">${opt}</label>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div class="quiz-question">Q${qIdx + 1}. ${mcq.question}</div>
+                    <div class="quiz-options">
+                        ${optionsHtml}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Check MCQ response interactively
+        function checkMCQAnswer(qIdx, oIdx, selectedVal, correctVal) {
+            // Lock other options once clicked
+            if (qIdx in quizAnswers) return;
+            quizAnswers[qIdx] = selectedVal;
+
+            // Check radio button
+            document.getElementById(`radio-${qIdx}-${oIdx}`).checked = true;
+
+            const options = document.querySelectorAll(`[id^="opt-${qIdx}-"]`);
+
+            // Apply styling
+            options.forEach(opt => {
+                const label = opt.querySelector('label').innerText;
+                if (label.trim().toLowerCase() === correctVal.trim().toLowerCase()) {
+                    opt.classList.add("correct");
+                } else if (label.trim().toLowerCase() === selectedVal.trim().toLowerCase()) {
+                    opt.classList.add("incorrect");
+                }
+            });
+
+            // Update running score
+            let correctCount = 0;
+            const cardKeys = Object.keys(quizAnswers);
+            // We need to re-verify against actual list values, or just count how many correct options exist
+            const correctOptions = document.querySelectorAll(".quiz-option.correct");
+            // Since multiple correct classes are added globally, we check inside parent elements
+            cardKeys.forEach(k => {
+                const correctEl = document.querySelector(`#q-card-${k} .quiz-option.correct`);
+                // Check if the user's selected choice is correct
+                const selectedEl = document.querySelector(`#q-card-${k} .quiz-option.incorrect`);
+                if (!selectedEl && correctEl) {
+                    correctCount++;
+                }
+            });
+
+            document.getElementById("quizScore").innerText = correctCount;
+        }
+
+        // Switch panel tabs
+        function switchTab(tabName) {
+            activeTab = tabName;
+
+            // Switch active classes on buttons
+            const btns = document.querySelectorAll(".tab-btn");
+            btns.forEach(btn => {
+                btn.classList.remove("active");
+                if (btn.innerText.toLowerCase().includes(tabName.substring(0, 4))) {
+                    btn.classList.add("active");
+                }
+            });
+
+            // Switch active panel panes
+            const panes = document.querySelectorAll(".tab-pane");
+            panes.forEach(pane => pane.classList.remove("active"));
+
+            document.getElementById(`pane-${tabName}`).classList.add("active");
+        }
+
+        // Copy summary to clipboard helper
+        function copySummaryToClipboard() {
+            const summaryText = document.getElementById("summaryText").innerText;
+            navigator.clipboard.writeText(summaryText)
+                .then(() => alert("Summary copied to clipboard!"))
+                .catch(err => alert("Copy failed: " + err));
+        }
+
+        // Ingest URL handler
+        async function ingestURL(event) {
+            if (event) event.preventDefault();
+            const input = document.getElementById("urlInput");
+            const url = input.value.trim();
+            if (!url) return;
+
+            input.value = "";
+            setLoader(true, "Ingesting web page and extracting text...");
+
+            try {
+                const res = await fetch("/api/url/ingest", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url: url })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    await loadFilesList();
+                    // Select the newly ingested URL upload id to run analysis
+                    selectFile(data.upload_id);
+                } else {
+                    alert("URL Ingestion failed: " + data.error);
+                    setLoader(false);
+                }
+            } catch (err) {
+                alert("URL Ingestion failed: " + err.message);
+                setLoader(false);
+            }
+        }
+
+        // Fetch and display flashcards
+        async function loadFlashcards(id) {
+            const container = document.getElementById("flashcardsContainer");
+            container.innerHTML = "<div class='empty-state-text text-center'><i class='fa-solid fa-spinner fa-spin'></i> Loading flashcards...</div>";
+
+            try {
+                const res = await fetch(`/api/agent/flashcards/${id}`);
+                const data = await res.json();
+                if (data.success && data.flashcards && data.flashcards.length > 0) {
+                    renderFlashcards(data.flashcards);
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state-text text-center" style="grid-column: 1 / -1;">
+                            No study flashcards generated yet.<br>
+                            <button class="btn btn-secondary" style="margin-top: 10px;" onclick="generateFlashcards()">
+                                <i class="fa-solid fa-magic"></i> Generate Flashcards
+                            </button>
+                        </div>`;
+                }
+            } catch (err) {
+                container.innerHTML = `<div class="empty-state-text text-center" style="grid-column: 1 / -1;">No study flashcards generated yet.</div>`;
+            }
+        }
+
+        function renderFlashcards(cards) {
+            const container = document.getElementById("flashcardsContainer");
+            container.innerHTML = "";
+            cards.forEach((card, idx) => {
+                const wrapper = document.createElement("div");
+                wrapper.className = "flashcard-wrapper";
+                wrapper.onclick = () => wrapper.classList.toggle("flipped");
+
+                wrapper.innerHTML = `
+                    <div class="flashcard-inner">
+                        <div class="flashcard-front">
+                            <span class="flashcard-badge">Card ${idx + 1}</span>
+                            <div>${card.front}</div>
+                        </div>
+                        <div class="flashcard-back">
+                            <span class="flashcard-badge" style="color: #c7d2fe;">Answer</span>
+                            <div>${card.back}</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(wrapper);
+            });
+        }
+
+        async function generateFlashcards() {
+            if (!currentFileId) return;
+            setLoader(true, "Generating study flashcards using Agent...");
+            try {
+                const res = await fetch(`/api/agent/ask/${currentFileId}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ request: "Create flashcards" })
+                });
+                const data = await res.json();
+                if (data.success && data.flashcards) {
+                    renderFlashcards(data.flashcards);
+                    switchTab('flashcards');
+                } else {
+                    alert("Failed to generate flashcards: " + (data.error || "unknown error"));
+                }
+            } catch (err) {
+                alert("Error calling agent: " + err.message);
+            } finally {
+                setLoader(false);
+            }
+        }
+
+        // Fetch and display revision notes
+        async function loadRevisionNotes(id) {
+            const el = document.getElementById("revisionNotesText");
+            el.innerHTML = "<div class='empty-state-text text-center'><i class='fa-solid fa-spinner fa-spin'></i> Loading revision notes...</div>";
+
+            try {
+                const res = await fetch(`/api/agent/revision-notes/${id}`);
+                const data = await res.json();
+                if (data.success && data.revision_notes) {
+                    renderRevisionNotes(data.revision_notes);
+                } else {
+                    el.innerHTML = `
+                        <div class="empty-state-text text-center">
+                            No study revision notes generated yet.<br>
+                            <button class="btn btn-secondary" style="margin-top: 10px;" onclick="generateRevisionNotes()">
+                                <i class="fa-solid fa-magic"></i> Generate Revision Notes
+                            </button>
+                        </div>`;
+                }
+            } catch (err) {
+                el.innerHTML = `<div class="empty-state-text text-center">No study revision notes generated yet.</div>`;
+            }
+        }
+
+        function parseMarkdown(md) {
+            if (!md) return "";
+            // simple escape html
+            let html = md.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            // replace headers ## Heading
+            html = html.replace(/^##\s+(.*)$/gmi, '<h3 style="margin-top: 16px; margin-bottom: 8px; font-weight: 600; color: #a5b4fc;">$1</h3>');
+
+            // replace bold **text**
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            // replace bullets - item
+            html = html.replace(/^\-\s+(.*)$/gmi, '<li style="margin-left: 20px; margin-bottom: 6px; list-style-type: disc;">$1</li>');
+
+            // replace newlines with <br>
+            html = html.replace(/\n/g, '<br>');
+            return html;
+        }
+
+        function renderRevisionNotes(notesText) {
+            const el = document.getElementById("revisionNotesText");
+            el.innerHTML = parseMarkdown(notesText);
+        }
+
+        async function generateRevisionNotes() {
+            if (!currentFileId) return;
+            setLoader(true, "Generating study revision notes using Agent...");
+            try {
+                const res = await fetch(`/api/agent/ask/${currentFileId}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ request: "Create revision notes" })
+                });
+                const data = await res.json();
+                if (data.success && data.revision_notes) {
+                    renderRevisionNotes(data.revision_notes);
+                    switchTab('revision-notes');
+                } else {
+                    alert("Failed to generate revision notes: " + (data.error || "unknown error"));
+                }
+            } catch (err) {
+                alert("Error calling agent: " + err.message);
+            } finally {
+                setLoader(false);
+            }
+        }
+
+        // Handle Agent result dynamically updates UI tabs
+        function handleAgentResult(data) {
+            if (!data.success) return;
+
+            const intent = data.intent;
+
+            // 1. Flashcards
+            if (data.flashcards) {
+                renderFlashcards(data.flashcards);
+            }
+            // 2. Revision Notes
+            if (data.revision_notes) {
+                renderRevisionNotes(data.revision_notes);
+            }
+            // 3. Summarize
+            if (data.summary) {
+                document.getElementById("summaryText").innerText = data.summary;
+            }
+            // 4. MCQs
+            if (data.mcqs) {
+                setupQuiz(data.mcqs);
+            }
+            // 5. Keywords
+            if (data.keywords) {
+                const kwContainer = document.getElementById("keywordsContainer");
+                kwContainer.innerHTML = "";
+                data.keywords.forEach(kw => {
+                    const badge = document.createElement("span");
+                    badge.className = "keyword-badge";
+                    badge.innerHTML = `<i class="fa-solid fa-tag"></i> ${kw}`;
+                    kwContainer.appendChild(badge);
+                });
+            }
+            // 6. Analytics
+            if (data.analytics) {
+                document.getElementById("analyticDifficulty").innerText = data.analytics.difficulty_level;
+                const diffEl = document.getElementById("analyticDifficulty");
+                diffEl.className = "metric-value";
+                diffEl.classList.add(`badge-${data.analytics.difficulty_level.toLowerCase()}`);
+
+                document.getElementById("analyticWordCount").innerText = data.analytics.word_count.toLocaleString();
+                document.getElementById("analyticStudyTime").innerText = `${data.analytics.estimated_study_time} min`;
+            }
+        }
+
+        // Submit User Q&A chat question to Agent
+        async function sendChatMessage() {
+            const input = document.getElementById("chatInput");
+            const question = input.value.trim();
+            if (!question || !currentFileId) return;
+
+            input.value = "";
+
+            const history = document.getElementById("chatHistory");
+
+            // Add user bubble
+            const userBubble = document.createElement("div");
+            userBubble.className = "chat-bubble bubble-user";
+            userBubble.innerText = question;
+            history.appendChild(userBubble);
+
+            // Add loading bot bubble
+            const botBubble = document.createElement("div");
+            botBubble.className = "chat-bubble bubble-bot";
+            botBubble.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> Processing request...`;
+            history.appendChild(botBubble);
+
+            // Scroll to bottom
+            history.scrollTop = history.scrollHeight;
+
+            try {
+                const res = await fetch(`/api/agent/ask/${currentFileId}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ request: question })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    // Update UI elements based on return data
+                    handleAgentResult(data);
+
+                    const intent = data.intent;
+                    if (intent === "answer_question" || data.answer) {
+                        botBubble.innerText = data.answer;
+                    } else if (intent === "generate_flashcards") {
+                        botBubble.innerHTML = `✨ I have generated ${data.flashcards.length} study flashcards for this material! Click on the <strong>Flashcards</strong> tab to study them.`;
+                    } else if (intent === "generate_revision_notes") {
+                        botBubble.innerHTML = `✨ Structured study revision notes have been created! Click on the <strong>Revision Notes</strong> tab to view them.`;
+                    } else if (intent === "summarize") {
+                        botBubble.innerHTML = `✨ The summary has been updated successfully! Check it out in the <strong>Summary</strong> tab.`;
+                    } else if (intent === "generate_mcqs") {
+                        botBubble.innerHTML = `✨ Practice quiz has been successfully generated! See the <strong>Practice Quiz</strong> tab.`;
+                    } else if (intent === "full_analysis") {
+                        botBubble.innerHTML = `✨ Full document analysis has been executed! Summary, key concepts, quiz questions, and study time estimates have been updated.`;
+                    } else {
+                        botBubble.innerHTML = `✨ Task processed successfully! (Intent: ${intent})`;
+                    }
+                } else {
+                    botBubble.innerText = "Agent error: " + data.error;
+                }
+            } catch (err) {
+                botBubble.innerText = "Failed to communicate with Agent server: " + err.message;
+            }
+
+            history.scrollTop = history.scrollHeight;
+        }
+
+        // Add chat response helper for voice agent
+        function addAgentChatResponse(data) {
+            if (!data.success) return;
+            const history = document.getElementById("chatHistory");
+            const botBubble = document.createElement("div");
+            botBubble.className = "chat-bubble bubble-bot";
+
+            const intent = data.intent;
+            if (intent === "answer_question" || data.answer) {
+                botBubble.innerText = data.answer;
+            } else if (intent === "generate_flashcards") {
+                botBubble.innerHTML = `✨ <strong>Agent:</strong> I have generated ${data.flashcards.length} study flashcards for this material! Click on the <strong>Flashcards</strong> tab to study them.`;
+            } else if (intent === "generate_revision_notes") {
+                botBubble.innerHTML = `✨ <strong>Agent:</strong> Structured study revision notes have been created! Click on the <strong>Revision Notes</strong> tab to view them.`;
+            } else if (intent === "summarize") {
+                botBubble.innerHTML = `✨ <strong>Agent:</strong> The summary has been updated successfully! Check it out in the <strong>Summary</strong> tab.`;
+            } else if (intent === "generate_mcqs") {
+                botBubble.innerHTML = `✨ <strong>Agent:</strong> Practice quiz has been successfully generated! See the <strong>Practice Quiz</strong> tab.`;
+            } else if (intent === "full_analysis") {
+                botBubble.innerHTML = `✨ <strong>Agent:</strong> Full document analysis has been executed! Summary, key concepts, quiz questions, and study time estimates have been updated.`;
+            } else {
+                botBubble.innerHTML = `✨ <strong>Agent:</strong> Task processed successfully! (Intent: ${intent})`;
+            }
+
+            history.appendChild(botBubble);
+            history.scrollTop = history.scrollHeight;
+        }
+
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage();
+            }
+        }
+
+        // Load Q&A history list
+        async function loadQAHistory(id) {
+            const historyContainer = document.getElementById("chatHistory");
+            // Reset to defaults
+            historyContainer.innerHTML = `
+                <div class="chat-bubble bubble-bot">
+                    Hello! I've fully analyzed your notes. You can ask me any question about the material (e.g. "What are the main findings?", "Explain the core formula details"), and I'll find the answers directly in the text!
+                </div>
+            `;
+
+            try {
+                const res = await fetch(`/api/qa-history/${id}`);
+                const data = await res.json();
+
+                if (data.success && data.history.length > 0) {
+                    data.history.forEach(qa => {
+                        const userBubble = document.createElement("div");
+                        userBubble.className = "chat-bubble bubble-user";
+                        userBubble.innerText = qa.question;
+
+                        const botBubble = document.createElement("div");
+                        botBubble.className = "chat-bubble bubble-bot";
+                        botBubble.innerText = qa.answer;
+
+                        historyContainer.appendChild(userBubble);
+                        historyContainer.appendChild(botBubble);
+                    });
+                }
+            } catch (err) {
+                console.error("Error loading QA history:", err);
+            }
+
+            historyContainer.scrollTop = historyContainer.scrollHeight;
+        }
+
+        // Download Markdown report
+        function downloadStudyGuide() {
+            if (!currentFileId) return;
+            window.location.href = `/api/download/${currentFileId}`;
+        }
+
+        // Delete File operations
+        async function deleteFile(id) {
+            if (!confirm("Are you sure you want to delete this study material?")) return;
+
+            setLoader(true, "Deleting file...");
+
+            try {
+                const res = await fetch(`/api/delete/${id}`, {
+                    method: "POST"
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    if (currentFileId === id) {
+                        resetToWelcome();
+                    }
+                    await loadFilesList();
+                } else {
+                    alert("Delete failed: " + data.error);
+                }
+            } catch (err) {
+                alert("Delete failed: " + err.message);
+            } finally {
+                setLoader(false);
+            }
+        }
+
+        async function deleteCurrentFile() {
+            if (currentFileId) {
+                await deleteFile(currentFileId);
+            }
+        }
+
+        function resetToWelcome() {
+            currentFileId = null;
+            document.getElementById("welcomeScreen").style.display = "flex";
+            document.getElementById("dashboardPanel").style.display = "none";
+            loadFilesList();
+        }
+    </script>
+</body>
+
+</html>

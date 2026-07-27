@@ -1,0 +1,27 @@
+
+flask
+easyocr
+opencv-python
+pytesseract
+pdf2image
+nltk
+spacy
+transformers
+torch
+yake
+pypdf
+
+# Feature 1: LangGraph Agent
+langgraph>=0.2.0
+langchain-core>=0.2.0
+
+# Feature 2: Website URL Ingestion
+requests>=2.31.0
+trafilatura>=1.12.0
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
+
+# Feature 3: Voice Assistant
+openai-whisper>=20230918
+pyttsx3>=2.90
+pydub>=0.25.1

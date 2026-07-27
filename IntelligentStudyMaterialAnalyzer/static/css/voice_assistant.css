@@ -1,0 +1,235 @@
+/*
+ * voice_assistant.css
+ * Combined stylesheet for Voice Assistant and premium 3D study flashcards,
+ * tailored to match the parent app's glowing dark mode.
+ */
+
+:root {
+  --voice-primary:      #6366f1;   /* indigo */
+  --voice-recording:    #ef4444;   /* red */
+  --voice-processing:   #f59e0b;   /* amber */
+  --voice-speaking:     #10b981;   /* emerald green */
+  --voice-btn-size:     52px;
+  --voice-transition:   0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Voice Assistant Panel ────────────────────────────────────────────────── */
+.voice-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(10px);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Mic Button ───────────────────────────────────────────────────────────── */
+.voice-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 200px;
+  height: var(--voice-btn-size);
+  padding: 0 24px;
+  border: none;
+  border-radius: 30px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  transition: var(--voice-transition);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  outline: none;
+}
+
+/* States */
+.voice-btn--idle {
+  background: var(--primary-gradient);
+  color: #fff;
+}
+
+.voice-btn--idle:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.3);
+}
+
+.voice-btn--idle:active {
+  background-color: var(--voice-recording);
+  transform: scale(0.97);
+}
+
+.voice-btn--recording {
+  background-color: var(--voice-recording);
+  color: #fff;
+  animation: voice-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes voice-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+  50%       { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0);  }
+}
+
+.voice-btn--processing {
+  background-color: var(--voice-processing);
+  color: #fff;
+  cursor: wait;
+  animation: voice-shimmer 1.4s linear infinite;
+  background-size: 200% 100%;
+  background-image: linear-gradient(
+    90deg,
+    var(--voice-processing) 25%,
+    #fbbf24 50%,
+    var(--voice-processing) 75%
+  );
+}
+
+@keyframes voice-shimmer {
+  0%   { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+.voice-btn--speaking {
+  background-color: var(--voice-speaking);
+  color: #fff;
+  animation: voice-wave 1.2s ease-in-out infinite;
+}
+
+@keyframes voice-wave {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.02); opacity: 0.9; }
+}
+
+/* ── Status Bar ───────────────────────────────────────────────────────────── */
+.voice-status {
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-align: center;
+  min-height: 28px;
+  width: 100%;
+  box-sizing: border-box;
+  transition: background-color 0.2s, color 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.voice-status--info     { background: rgba(59, 130, 246, 0.1); color: #60a5fa; }
+.voice-status--recording{ background: rgba(239, 68, 68, 0.15); color: #f87171; font-weight: 600; }
+.voice-status--success  { background: rgba(16, 185, 129, 0.1); color: #34d399; }
+.voice-status--warning  { background: rgba(245, 158, 11, 0.1); color: #fbbf24; }
+.voice-status--error    { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+/* ── Read Aloud Button ─────────────────────────────────────────────────────── */
+.voice-read-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 20px;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.05);
+  cursor: pointer;
+  transition: var(--voice-transition);
+  margin-left: 8px;
+}
+
+.voice-read-btn:hover {
+  background: var(--voice-speaking);
+  color: #fff;
+  border-color: var(--voice-speaking);
+  transform: translateY(-1px);
+}
+
+.voice-read-btn::before { content: "🔊"; font-size: 0.85em; }
+
+/* ── Transcript Badge ─────────────────────────────────────────────────────── */
+.voice-transcript-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  background: rgba(99, 102, 241, 0.08);
+  border-left: 3px solid var(--voice-primary);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #a5b4fc;
+  font-style: italic;
+  margin: 6px 0;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+/* ── 3D Flashcards Styles ─────────────────────────────────────────────────── */
+.flashcards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding-top: 10px;
+}
+
+.flashcard-wrapper {
+  background-color: transparent;
+  height: 180px;
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.flashcard-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.flashcard-wrapper.flipped .flashcard-inner {
+  transform: rotateY(180deg);
+}
+
+.flashcard-front, .flashcard-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.flashcard-front {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-primary);
+  border-top: 4px solid #6366f1;
+}
+
+.flashcard-back {
+  background: rgba(99, 102, 241, 0.05);
+  color: #c7d2fe;
+  transform: rotateY(180deg);
+  border-top: 4px solid #a855f7;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.flashcard-badge {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
